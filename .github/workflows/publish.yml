@@ -1,0 +1,113 @@
+on:
+  push:
+  workflow_dispatch:
+
+env:
+  NAME: rubygems-publish
+  VERSION: "1.1.${{ github.run_number }}"
+
+jobs:
+  publish-ruby-2-6:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup Ruby 2.6
+        uses: actions/setup-ruby@v1
+        with:
+          ruby-version: 2.6.x
+
+      - name: Add lib/${{ env.NAME }}.rb
+        run: |
+          mkdir lib
+          cat > lib/${{ env.NAME }}.rb << EOM
+          class RubyGemsPublish
+            def self.hello
+              puts "Hello from ${{ github.repository }}!"
+            end
+          end
+          EOM
+      - name: Add ${{ env.NAME }}.gemspec
+        run: |
+          cat > ${{ env.NAME }}.gemspec << EOM
+          Gem::Specification.new do |s|
+              s.name        = '${{ env.NAME }}'
+              s.version     = '${{ env.VERSION }}'
+              s.files       = ["lib/${{ env.NAME }}.rb"]
+              s.metadata    = {
+                  "github_repo" => "https://github.com/${{ github.repository }}"
+              }
+              s.summary     = "This is a summary!"
+              s.authors     = ["Jamie Cansdale"]
+              s.licenses    = ['MIT']
+              s.homepage    = 'https://github.com/${{ github.repository }}'
+          end
+          EOM
+          
+      - name: Create ~/.gem/credentials
+        run: |
+          mkdir -p ~/.gem
+          cat > ~/.gem/credentials << EOM
+          ---
+          :github: Bearer ${{ github.token }}
+          EOM
+          chmod 0600 ~/.gem/credentials
+      - name: Build .gem
+        run: gem build *.gemspec
+
+      - name: Publish .gem
+        run: gem push --key github --host https://rubygems.pkg.github.com/${{ github.repository_owner }} *.gem
+
+      - run: gh api repos/${{ github.repository_owner }}/rubygems-install/dispatches <<< '{"event_type":"build"}' --input -
+        env:
+          GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}
+
+  publish-ruby-2-7:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Setup Ruby 2.7
+        uses: actions/setup-ruby@v1
+        with:
+          ruby-version: 2.7.x
+
+      - name: Add lib/${{ env.NAME }}.rb
+        run: |
+          mkdir lib
+          cat > lib/${{ env.NAME }}.rb << EOM
+          class RubyGemsPublish
+            def self.hello
+              puts "Hello from ${{ github.repository }}!"
+            end
+          end
+          EOM
+
+      - name: Add ${{ env.NAME }}.gemspec
+        run: |
+          cat > ${{ env.NAME }}.gemspec << EOM
+          Gem::Specification.new do |s|
+              s.name        = '${{ env.NAME }}'
+              s.version     = '${{ env.VERSION }}'
+              s.files       = ["lib/${{ env.NAME }}.rb"]
+              s.metadata    = {
+                  "github_repo" => "https://github.com/${{ github.repository }}"
+              }
+              s.summary     = "This is a summary!"
+              s.authors     = ["Jamie Cansdale"]
+              s.licenses    = ['MIT']
+              s.homepage    = 'https://github.com/${{ github.repository }}'
+          end
+          EOM
+        env:
+          VERSION: "${{ env.VERSION }}-ruby27"
+          
+      - name: Build .gem
+        run: gem build *.gemspec
+
+      - name: Publish .gem
+        run: gem push --host https://rubygems.pkg.github.com/${{ github.repository_owner }} *.gem
+        env:
+          GEM_HOST_API_KEY: "Bearer ${{ github.token }}"
+
+      - run: gh api repos/${{ github.repository_owner }}/rubygems-install/dispatches <<< '{"event_type":"build"}' --input -
+        env:
+          GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}
