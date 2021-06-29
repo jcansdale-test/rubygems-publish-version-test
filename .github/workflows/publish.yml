@@ -107,7 +107,3 @@ jobs:
         run: gem push --host https://rubygems.pkg.github.com/${{ github.repository_owner }} *.gem
         env:
           GEM_HOST_API_KEY: "Bearer ${{ github.token }}"
-
-      - run: gh api repos/${{ github.repository_owner }}/rubygems-install/dispatches <<< '{"event_type":"build"}' --input -
-        env:
-          GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}
