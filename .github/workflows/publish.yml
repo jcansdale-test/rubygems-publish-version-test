@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
 
 env:
-  NAME: rubygems-publish
+  NAME: rubygems-publish-version-test
   VERSION: "1.1.${{ github.run_number }}"
 
 jobs:
