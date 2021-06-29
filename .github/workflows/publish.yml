@@ -57,10 +57,6 @@ jobs:
       - name: Publish .gem
         run: gem push --key github --host https://rubygems.pkg.github.com/${{ github.repository_owner }} *.gem
 
-      - run: gh api repos/${{ github.repository_owner }}/rubygems-install/dispatches <<< '{"event_type":"build"}' --input -
-        env:
-          GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}
-
   publish-ruby-2-7:
     runs-on: ubuntu-latest
 
